@@ -13,12 +13,27 @@ from PIL import Image
 import io
 import pytesseract
 import os
-print(os.environ["PATH"])
-pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
-pytesseract.pytesseract.tesseract_cmd = "/home/vscode/.local/bin/pytesseract"
+
 # Initialize Groq LLM
 groq_llm = Groq(model="llama-3.3-70b-specdec", api_key= st.secrets["k"]["api_key"])
+import os
+import pytesseract
 
+# List of potential Tesseract paths
+tesseract_paths = [
+    "/usr/bin/tesseract",
+    "/home/vscode/.local/bin/tesseract"
+]
+
+# Check and set the first valid Tesseract path
+for path in tesseract_paths:
+    if os.path.exists(path):
+        pytesseract.pytesseract.tesseract_cmd = path
+        break
+else:
+    raise FileNotFoundError("Tesseract executable not found in any of the specified paths.")
+
+print(f"Tesseract path set to: {pytesseract.pytesseract.tesseract_cmd}")
 def extract_text_from_image(image_data):
     """Extract text from image using Tesseract OCR"""
     try:
