@@ -14,7 +14,7 @@ from PIL import Image
 import io
 
 # Initialize Groq LLM
-groq_llm = Groq(model="llama-3.3-70b-specdec", api_key=st.secrets["k"]["GROQ_API_KEY"])
+groq_llm = Groq(model="llama-3.3-70b-specdec", api_key= st.secrets["k"]["api_key"])
 
 # Multimodal Processing Functions
 def extract_text_from_image(image_path):
