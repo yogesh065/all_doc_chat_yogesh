@@ -14,6 +14,7 @@ import io
 import pytesseract
 import os
 from llama_index.core import Settings
+from llama_index.core.node_parser import SentenceSplitter
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding 
 # Set up the HuggingFaceEmbedding class with the required model to use with llamaindex core.
 embed_model  = HuggingFaceEmbedding(model_name = "BAAI/bge-small-en")
@@ -137,8 +138,14 @@ def create_vector_index(content):
     """Create a vector index for querying document content"""
     hf_embedding = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
     st.write(content)
-    documents = [Document(content=content, metadata={"source": "uploaded_file"}) for content in content.split("\n\n")]
-    index = VectorStoreIndex.from_documents(documents, embed_model=hf_embedding)
+    # Split the content into chunks
+    text= content.split("\n\n")
+    documents = [Document(text=text) for text in text]
+    Settings.text_splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=100)
+    index = VectorStoreIndex.from_documents(
+        documents,
+        transformations=[SentenceSplitter(chunk_size=1024, chunk_overlap=20)],
+    )
     return index.as_query_engine(llm=groq_llm)
 
 # Streamlit UI
