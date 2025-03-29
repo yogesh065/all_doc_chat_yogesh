@@ -137,9 +137,7 @@ def create_vector_index(content):
     """Create a vector index for querying document content using BGE embeddings"""
     # Initialize BGE embedding model with proper configuration
     embed_model = HuggingFaceEmbedding(
-        model_name="BAAI/bge-small-en",
-        model_kwargs={"device": "cpu"},
-        encode_kwargs={"normalize_embeddings": True}  # Moved to encode parameters
+        model_name="BAAI/bge-small-en"
     )
     
     # Configure text splitting parameters
