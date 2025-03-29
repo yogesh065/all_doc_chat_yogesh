@@ -13,6 +13,7 @@ from PIL import Image
 import io
 import pytesseract
 import os
+from llama_index.core import Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding 
 # Set up the HuggingFaceEmbedding class with the required model to use with llamaindex core.
 embed_model  = HuggingFaceEmbedding(model_name = "BAAI/bge-small-en")
