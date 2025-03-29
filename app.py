@@ -136,18 +136,15 @@ def process_documents(uploaded_files):
 
 def create_vector_index(content):
     """Create a vector index for querying document content"""
-    hf_embedding = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    # Split the content into chunks
     text= content.split("\n\n")
-
+    embed_model  = HuggingFaceEmbedding(model_name = "BAAI/bge-small-en")
+    Settings.embed_model = embed_model
     documents = [Document(text=text) for text in text]
     st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
     Settings.text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
     nodes = Settings.text_splitter.split_documents(documents)  # Correctly split documents into nodes
     index = VectorStoreIndex.from_documents(
-        nodes,
-        transformations=[SentenceSplitter(chunk_size=1024, chunk_overlap=20)],
-    )
+        nodes    )
     return index.as_query_engine(llm=groq_llm)
 
 # Streamlit UI
