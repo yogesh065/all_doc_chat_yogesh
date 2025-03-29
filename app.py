@@ -7,7 +7,7 @@ from llama_index.llms.groq import Groq
 import fitz  # PyMuPDF
 import pandas as pd
 from pptx import Presentation
-from docx import Document
+from llama_index.core import Document
 import pytesseract
 from PIL import Image
 import io
@@ -131,7 +131,7 @@ def process_documents(uploaded_files):
 
 def create_vector_index(content):
     """Create a vector index for querying document content"""
-    documents = [Document(text=content)]
+    documents = [Document()]
     index = VectorStoreIndex.from_documents(documents)
     return index.as_query_engine(llm=groq_llm)
 
