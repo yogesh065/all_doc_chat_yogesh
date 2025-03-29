@@ -11,7 +11,9 @@ from docx import Document
 import pytesseract
 from PIL import Image
 import io
+import pytesseract
 
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 # Initialize Groq LLM
 groq_llm = Groq(model="llama-3.3-70b-specdec", api_key= st.secrets["k"]["api_key"])
 
