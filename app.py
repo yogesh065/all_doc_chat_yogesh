@@ -133,8 +133,8 @@ def process_documents(uploaded_files):
 def create_vector_index(content):
     """Create a vector index for querying document content"""
     hf_embedding = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
-
-    documents = [Document()]
+    print("Creating vector index...",content)
+    documents = [Document(content=content, metadata={"source": "uploaded_file"}) for content in content.split("\n\n")]
     index = VectorStoreIndex.from_documents(documents, embed_model=hf_embedding)
     return index.as_query_engine(llm=groq_llm)
 
