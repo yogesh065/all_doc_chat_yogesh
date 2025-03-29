@@ -7,8 +7,7 @@ python-pptx
 pandas
 llama-index
 llama-index-llms-groq
-transformers
-
+llama-index-embeddings-huggingface
 # # Setup Instructions
 # """
 # 1. Install Tesseract OCR:
