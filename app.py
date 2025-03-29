@@ -2,8 +2,7 @@ import streamlit as st
 import os
 import tempfile
 from pathlib import Path
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext
-from llama_index.core.schema import ImageNode
+from llama_index.core import VectorStoreIndex
 from llama_index.llms.groq import Groq
 import fitz  # PyMuPDF
 import pandas as pd
@@ -16,11 +15,16 @@ import io
 # Initialize Groq LLM
 groq_llm = Groq(model="llama-3.3-70b-specdec", api_key= st.secrets["k"]["api_key"])
 
-# Multimodal Processing Functions
-def extract_text_from_image(image_path):
+def extract_text_from_image(image_data):
     """Extract text from image using Tesseract OCR"""
     try:
-        img = Image.open(image_path)
+        # Open the image from in-memory data or file path
+        if isinstance(image_data, str):  # If a file path is provided
+            img = Image.open(image_data)
+        else:  # If in-memory bytes are provided
+            img = Image.open(io.BytesIO(image_data))
+        
+        # Perform OCR using Tesseract
         text = pytesseract.image_to_string(img)
         return text.strip()
     except Exception as e:
@@ -58,14 +62,24 @@ def process_office_file(file_path, file_type):
     if file_type == "ppt":
         prs = Presentation(file_path)
         for i, slide in enumerate(prs.slides):
-            img_path = f"temp_slide_{i}.png"
-            slide.shapes.save(img_path)
-            text_content += extract_text_from_image(img_path)
-            
+            for shape in slide.shapes:
+                # Extract text from text frames
+                if shape.has_text_frame:
+                    text_content += shape.text_frame.text + "\n"
+                
+                # Extract images from slides
+                if shape.shape_type == 13:  # Shape type 13 corresponds to pictures
+                    image = shape.image
+                    image_bytes = image.blob
+                    img = Image.open(io.BytesIO(image_bytes))
+                    
+                    # Perform OCR on the image
+                    extracted_text = extract_text_from_image(io.BytesIO(image_bytes))
+                    text_content += f"\n[Image on slide {i}]: {extracted_text.strip()}"
+                    
     elif file_type == "doc":
         doc = Document(file_path)
         text_content = "\n".join([para.text for para in doc.paragraphs])
-        
     elif file_type == "xlsx":
         df = pd.read_excel(file_path, sheet_name=None)
         for sheet_name, sheet_data in df.items():
@@ -74,8 +88,8 @@ def process_office_file(file_path, file_type):
     st.write(text_content)
     return text_content
 
-# Document Processing Pipeline
 def process_documents(uploaded_files):
+    """Process uploaded documents and extract their content"""
     all_content = []
     
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -101,8 +115,8 @@ def process_documents(uploaded_files):
     
     return "\n\n".join(all_content)
 
-# Vector Index Creation
 def create_vector_index(content):
+    """Create a vector index for querying document content"""
     documents = [Document(text=content)]
     index = VectorStoreIndex.from_documents(documents)
     return index.as_query_engine(llm=groq_llm)
@@ -148,17 +162,3 @@ if "query_engine" in st.session_state:
             st.markdown(response.response)
             st.session_state.messages.append({"role": "assistant", "content": response.response})
 
-
-
-# Setup Instructions
-"""
-1. Install Tesseract OCR:
-   - Windows: https://github.com/UB-Mannheim/tesseract/wiki
-   - Mac: brew install tesseract
-   - Linux: sudo apt install tesseract-ocr
-
-2. Install dependencies:
-   pip install -r requirements.txt
-
-3. Set GROQ_API_KEY in Streamlit secrets
-"""
