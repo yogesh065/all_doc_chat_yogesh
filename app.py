@@ -28,7 +28,7 @@ def extract_text_from_image(image_path):
         return ""
 
 def process_pdf(file_path):
-    """Extract text, images and tables from PDF"""
+    """Extract text, images, and tables from PDF without saving images to disk"""
     full_text = ""
     doc = fitz.open(file_path)
     
@@ -41,10 +41,13 @@ def process_pdf(file_path):
         for img_index, img in enumerate(image_list):
             base_image = doc.extract_image(img[0])
             image_bytes = base_image["image"]
+            
+            # Open the image in memory
             image = Image.open(io.BytesIO(image_bytes))
-            image_path = f"temp_images/page_{page_num}_img_{img_index}.png"
-            image.save(image_path)
-            full_text += "\n" + extract_text_from_image(image_path)
+            
+            # Extract text from the image using OCR
+            extracted_text = pytesseract.image_to_string(image)
+            full_text += f"\n[Image on page {page_num}, index {img_index}]: {extracted_text.strip()}"
             
     return full_text
 
