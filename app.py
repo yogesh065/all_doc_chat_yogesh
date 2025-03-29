@@ -142,7 +142,8 @@ def create_vector_index(content):
     documents = [Document(text=text) for text in text]
     st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
     Settings.text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
-    nodes = Settings.text_splitter.split_documents(documents)  # Correctly split documents into nodes
+    parser = SentenceSplitter()
+    nodes = parser.get_nodes_from_documents(documents)
     index = VectorStoreIndex.from_documents(
         nodes    )
     return index.as_query_engine(llm=groq_llm)
