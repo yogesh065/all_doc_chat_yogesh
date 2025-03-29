@@ -13,6 +13,7 @@ from PIL import Image
 import io
 import pytesseract
 import os
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 # Initialize Groq LLM
 groq_llm = Groq(model="llama-3.3-70b-specdec", api_key= st.secrets["k"]["api_key"])
@@ -131,8 +132,10 @@ def process_documents(uploaded_files):
 
 def create_vector_index(content):
     """Create a vector index for querying document content"""
+    hf_embedding = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
     documents = [Document()]
-    index = VectorStoreIndex.from_documents(documents)
+    index = VectorStoreIndex.from_documents(documents, embed_model=hf_embedding)
     return index.as_query_engine(llm=groq_llm)
 
 # Streamlit UI
