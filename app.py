@@ -136,16 +136,30 @@ def process_documents(uploaded_files):
 
 def create_vector_index(content):
     """Create a vector index for querying document content"""
-    text= content.split("\n\n")
-    embed_model  = HuggingFaceEmbedding(model_name = "BAAI/bge-small-en")
+    # Initialize BGE embedding model with proper configuration
+    embed_model = HuggingFaceEmbedding(
+        model_name="BAAI/bge-small-en",
+        model_kwargs={"device": "cpu"},
+        encode_kwargs={"normalize_embeddings": True}
+    )
     Settings.embed_model = embed_model
-    documents = [Document(text=text) for text in text]
-    st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
-    Settings.text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
-    parser = SentenceSplitter()
-    nodes = parser.get_nodes_from_documents(documents)
+    
+    # Configure text splitting parameters
+    Settings.text_splitter = SentenceSplitter(
+        chunk_size=512,  # Aligns with BGE-small-en's optimal input length
+        chunk_overlap=50
+    )
+    
+    # Create document from content
+    document = Document(text=content)
+    
+    # Create index with proper document processing
     index = VectorStoreIndex.from_documents(
-        nodes    )
+        [document],
+        show_progress=True
+    )
+    
+    # Return query engine with LLM integration
     return index.as_query_engine(llm=groq_llm)
 
 # Streamlit UI
