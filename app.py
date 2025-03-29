@@ -144,7 +144,6 @@ def create_vector_index(content):
     st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
     Settings.text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
     nodes = SentenceSplitter()
-    st.write(f"Number of nodes: {len(nodes)} and this is the content: {nodes}")
     index = VectorStoreIndex.from_documents(
         nodes,
         transformations=[SentenceSplitter(chunk_size=1024, chunk_overlap=20)],
