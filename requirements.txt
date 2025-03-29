@@ -1,0 +1,22 @@
+streamlit
+pytesseract==0.3.10
+pillow
+pymupdf
+python-docx
+python-pptx
+pandas
+llama-index
+llama-index-llms-groq
+
+# # Setup Instructions
+# """
+# 1. Install Tesseract OCR:
+#    - Windows: https://github.com/UB-Mannheim/tesseract/wiki
+#    - Mac: brew install tesseract
+#    - Linux: sudo apt install tesseract-ocr
+
+# 2. Install dependencies:
+#    pip install -r requirements.txt
+
+# 3. Set GROQ_API_KEY in Streamlit secrets
+# """
