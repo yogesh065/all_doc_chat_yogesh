@@ -15,6 +15,7 @@ import pytesseract
 import os
 print(os.environ["PATH"])
 pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+pytesseract.pytesseract.tesseract_cmd = "/home/vscode/.local/bin/pytesseract"
 # Initialize Groq LLM
 groq_llm = Groq(model="llama-3.3-70b-specdec", api_key= st.secrets["k"]["api_key"])
 
