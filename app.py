@@ -24,7 +24,8 @@ tesseract_paths = [
     "/usr/bin/tesseract",
     "/home/vscode/.local/bin/tesseract"
 ]
-
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+print(f"Tesseract path set to: {pytesseract.pytesseract.tesseract_cmd}")
 # Check and set the first valid Tesseract path
 for path in tesseract_paths:
     if os.path.exists(path):
