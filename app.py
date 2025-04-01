@@ -169,8 +169,8 @@ st.title("🧠 Multimodal Document Analyzer")
 # File Upload Section
 uploaded_files = st.file_uploader(
     "Upload Documents (PDF, DOC, XLSX, PPT)",
-    type=["pdf", "docx", "doc", "xlsx", "pptx", "ppt"],
-    accept_multiple_files=True
+    type=["pdf", "docx", "doc", "xlsx", "pptx", "ppt","png","jpg"],
+    accept_multiple_files=False
 )
 
 # Processing Pipeline
