@@ -12,7 +12,7 @@ groq             # Groq LLM API library
 
 # General Document Processing Libraries
 textract        # General-purpose text extraction from files
-
+openpyxl
 # Image Preprocessing Libraries
 opencv-python      # OpenCV for image preprocessing (grayscale, thresholding, etc.)
 numpy          # Numerical operations on images

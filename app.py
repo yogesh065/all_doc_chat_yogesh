@@ -16,7 +16,7 @@ from llama_index.llms.groq import Groq
 import tempfile
 import shutil
 import warnings
-
+from pptx import Presentation
 # 1. Suppress specific PyTorch warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="torch")
 # --------------------------
@@ -83,21 +83,59 @@ def process_pdf(file_path):
 
 def process_office(file_path):
     try:
-        # Handle embedded images in PPTX
-        if file_path.suffix.lower() in (".pptx", ".ppt"):
+        ext = file_path.suffix.lower()
+        text = ""
+        
+        # PowerPoint processing
+        if ext in (".pptx", ".ppt"):
             prs = Presentation(file_path)
-            text = ""
             for slide in prs.slides:
                 for shape in slide.shapes:
                     if shape.has_text_frame:
                         text += shape.text_frame.text + "\n"
                     elif shape.shape_type == 13:  # Picture
                         text += "\n[IMAGE]: " + extract_text_from_image(shape.image.blob)
-            return text
-        return textract.process(str(file_path)).decode("utf-8")
+        
+        # Word processing
+        elif ext in (".docx", ".doc"):
+            from docx import Document
+            doc = Document(file_path)
+            # Extract text
+            text = "\n".join([para.text for para in doc.paragraphs])
+            # Extract images
+            for rel in doc.part.rels.values():
+                if "image" in rel.target_ref:
+                    img_data = rel.target_part.blob
+                    text += "\n[IMAGE]: " + extract_text_from_image(img_data)
+        
+        # Excel processing
+        elif ext in (".xlsx", ".xls"):
+            # Text extraction
+            df = pd.read_excel(file_path, sheet_name=None)
+            text = "\n".join([f"Sheet: {name}\n{df.to_string()}" 
+                            for name, df in df.items()])
+            # Image extraction
+            if ext == ".xlsx":
+                from openpyxl import load_workbook
+                wb = load_workbook(file_path)
+                for sheet in wb.worksheets:
+                    for image in sheet._images:
+                        img_data = image._data()
+                        text += "\n[IMAGE]: " + extract_text_from_image(img_data)
+        
+        # Fallback for other formats
+        else:
+            text = textract.process(
+                str(file_path),
+                extension=ext.replace(".", "")
+            ).decode("utf-8")
+            
+        return text
+        
     except Exception as e:
         st.error(f"Error processing {file_path.name}: {str(e)}")
         return ""
+
 
 # --------------------------
 # Unified File Processor
