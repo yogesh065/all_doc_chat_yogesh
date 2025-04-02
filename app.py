@@ -15,7 +15,10 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.groq import Groq
 import tempfile
 import shutil
+import warnings
 
+# 1. Suppress specific PyTorch warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="torch")
 # --------------------------
 # Configuration & Constants
 # --------------------------
