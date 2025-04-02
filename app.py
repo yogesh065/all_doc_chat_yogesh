@@ -22,8 +22,6 @@ from PIL import Image
 
 # Suppress all warnings
 warnings.filterwarnings("ignore")
-st.set_option('deprecation.showPyplotGlobalUse', False)
-
 # --------------------------
 # Configuration & Constants
 # --------------------------
