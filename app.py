@@ -217,7 +217,7 @@ def main():
         st.header("Chat with Documents")
         
         # Chat container
-        chat_container = st.container(height=500)
+        chat_container = st.container()
         with chat_container:
             for msg in st.session_state.messages[-MAX_HISTORY:]:
                 with st.chat_message(msg["role"]):
