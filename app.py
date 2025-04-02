@@ -130,8 +130,10 @@ if uploaded_files or image_input:
         if image_input:
             image_bytes = image_input.read()
             ocr_text = extract_text_from_image(image_bytes)
-            st.write("Extracted Text from Image:")
-            st.write(ocr_text)
+            query_engine = create_vector_index(ocr_text)
+            st.session_state.query_engine = query_engine
+            
+         
 
 if st.session_state.query_engine:
     st.header("Chat with Your Documents")
