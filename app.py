@@ -13,6 +13,7 @@ from PIL import Image
 import io
 from llama_index.core import Settings
 from llama_index.core.node_parser import SentenceSplitter
+import shutil
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 # Configure HuggingFace Embedding Model
