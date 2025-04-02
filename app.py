@@ -1,11 +1,9 @@
 import streamlit as st
-import fitz
+import fitz  # PyMuPDF
 import pandas as pd
 import pytesseract
 import textract
 from pathlib import Path
-from PIL import Image
-import io
 import cv2
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
@@ -19,12 +17,12 @@ import warnings
 import hashlib
 from openpyxl import load_workbook
 from pptx import Presentation
+from docx import Document as DocxDocument
+from PIL import Image
 
-# Suppress all warnings before other imports
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-warnings.filterwarnings("ignore", module="transformers")
-warnings.filterwarnings("ignore", module="huggingface_hub")
+# Suppress all warnings
+warnings.filterwarnings("ignore")
+st.set_option('deprecation.showPyplotGlobalUse', False)
 
 # --------------------------
 # Configuration & Constants
@@ -56,10 +54,50 @@ Settings.embed_model = embed_model
 Settings.text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
 
 # --------------------------
-# Optimized File Processing
+# Core Processing Functions
 # --------------------------
-def file_hash(uploaded_file):
-    return hashlib.md5(uploaded_file.getbuffer()).hexdigest()
+def preprocess_image(image_data):
+    """Optimized image preprocessing for OCR"""
+    img = cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    return cv2.medianBlur(img, 3)
+
+@st.cache_data(max_entries=10, persist="disk", show_spinner=False)
+def extract_text_from_image(image_data):
+    """Cached OCR text extraction"""
+    try:
+        processed_img = preprocess_image(image_data)
+        return pytesseract.image_to_string(processed_img).strip()
+    except Exception as e:
+        st.error(f"OCR Error: {str(e)}")
+        return ""
+
+def process_pdf(file_path):
+    """PDF text and image extraction"""
+    text = ""
+    with fitz.open(file_path) as doc:
+        for page in doc:
+            text += page.get_text()
+            for img in page.get_images(full=True):
+                base_image = doc.extract_image(img[0])
+                text += "\n[IMAGE]: " + extract_text_from_image(base_image["image"])
+    return text
+
+def process_word(file_path):
+    """Word document processing with image extraction"""
+    text = ""
+    try:
+        doc = DocxDocument(file_path)
+        text = "\n".join([para.text for para in doc.paragraphs])
+        # Extract images from Word document
+        for rel in doc.part.rels.values():
+            if "image" in rel.target_ref:
+                img_data = rel.target_part.blob
+                text += "\n[IMAGE]: " + extract_text_from_image(img_data)
+    except Exception as e:
+        st.error(f"Word processing error: {str(e)}")
+    return text
 
 def process_excel(file_path):
     """Optimized Excel processing with chunked reading"""
@@ -88,36 +126,54 @@ def process_excel(file_path):
                 for image in sheet._images:
                     img_data = image._data()
                     text += "\n[IMAGE]: " + extract_text_from_image(img_data)
-                    
-        return text
     except Exception as e:
         st.error(f"Excel processing error: {str(e)}")
-        return ""
+    return text
 
-@st.cache_data(max_entries=5, ttl=3600, show_spinner=False)
-def process_file(uploaded_file, temp_dir):
-    """Unified file processor with optimized caching"""
-    file_path = Path(temp_dir) / uploaded_file.name
-    file_path.write_bytes(uploaded_file.getbuffer())
-    
-    ext = file_path.suffix.lower()
-    
-    if ext == ".pdf":
-        return process_pdf(file_path)
-    elif ext in (".xlsx", ".xls"):
-        return process_excel(file_path)
-    elif ext in (".pptx", ".ppt", ".doc", ".docx"):
-        return process_office(file_path)
-    elif ext in (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"):
-        return extract_text_from_image(file_path.read_bytes())
-    else:
-        try:
-            return textract.process(str(file_path)).decode("utf-8")
-        except:
-            return uploaded_file.getvalue().decode("utf-8", errors="replace")
+def process_powerpoint(file_path):
+    """PowerPoint processing with image extraction"""
+    text = ""
+    try:
+        prs = Presentation(file_path)
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    text += shape.text_frame.text + "\n"
+                elif shape.shape_type == 13:  # Picture
+                    text += "\n[IMAGE]: " + extract_text_from_image(shape.image.blob)
+    except Exception as e:
+        st.error(f"PowerPoint processing error: {str(e)}")
+    return text
 
 # --------------------------
-# Session State Management
+# Unified File Processor
+# --------------------------
+@st.cache_data(max_entries=5, ttl=3600, show_spinner=False)
+def process_file(uploaded_file, temp_dir):
+    """File processing router with optimized caching"""
+    file_path = Path(temp_dir) / uploaded_file.name
+    file_path.write_bytes(uploaded_file.getbuffer())
+    ext = file_path.suffix.lower()
+
+    try:
+        if ext == ".pdf":
+            return process_pdf(file_path)
+        elif ext in (".docx", ".doc"):
+            return process_word(file_path)
+        elif ext in (".xlsx", ".xls"):
+            return process_excel(file_path)
+        elif ext in (".pptx", ".ppt"):
+            return process_powerpoint(file_path)
+        elif ext in (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"):
+            return extract_text_from_image(file_path.read_bytes())
+        else:
+            return textract.process(str(file_path)).decode("utf-8")
+    except Exception as e:
+        st.error(f"Error processing {file_path.name}: {str(e)}")
+        return ""
+
+# --------------------------
+# Session Management
 # --------------------------
 def reset_session():
     st.session_state.messages = []
@@ -126,7 +182,7 @@ def reset_session():
 
 @st.cache_resource(show_spinner=False)
 def create_vector_index(content):
-    """Cached index creation based on content hash"""
+    """Cached index creation with content-based invalidation"""
     return VectorStoreIndex.from_documents(
         [Document(text=content)],
         embed_model=embed_model
