@@ -23,7 +23,6 @@ from streamlit.components.v1 import html
 
 # Suppress all warnings
 warnings.filterwarnings("ignore")
-st.set_option('deprecation.showPyplotGlobalUse', False)
 
 # --------------------------
 # Configuration & Constants
