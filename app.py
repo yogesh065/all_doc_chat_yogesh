@@ -19,9 +19,12 @@ from openpyxl import load_workbook
 from pptx import Presentation
 from docx import Document as DocxDocument
 from PIL import Image
+from streamlit.components.v1 import html
 
 # Suppress all warnings
 warnings.filterwarnings("ignore")
+st.set_option('deprecation.showPyplotGlobalUse', False)
+
 # --------------------------
 # Configuration & Constants
 # --------------------------
@@ -187,6 +190,26 @@ def create_vector_index(content):
     ).as_query_engine(llm=groq_llm)
 
 # --------------------------
+# Auto-scroll Functionality
+# --------------------------
+def auto_scroll():
+    scroll_js = """
+    <script>
+    function scrollToBottom() {
+        window.parent.document.querySelectorAll(
+            '[data-testid="stVerticalBlock"]'
+        ).forEach(function(el) {
+            if (el.scrollHeight > el.clientHeight) {
+                el.scrollTop = el.scrollHeight;
+            }
+        });
+    }
+    setTimeout(scrollToBottom, 100);
+    </script>
+    """
+    html(scroll_js, height=0)
+
+# --------------------------
 # Main Application
 # --------------------------
 def main():
@@ -222,6 +245,7 @@ def main():
                         combined_content = "\n\n".join(processed_content)
                         st.session_state.query_engine = create_vector_index(combined_content)
                         st.session_state.last_file_hash = current_hash
+                        reset_session()  # Clear previous chat history
                         
                 except Exception as e:
                     st.error(f"Processing failed: {str(e)}")
@@ -231,10 +255,18 @@ def main():
     if st.session_state.query_engine:
         st.header("💬 Document Insights")
         
-        for msg in st.session_state.messages[-5:]:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
+        # Create chat container with max height
+        chat_container = st.container(height=500)
         
+        with chat_container:
+            # Show last 5 messages
+            for msg in st.session_state.messages[-5:]:
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
+            
+            # Auto-scroll to bottom after rendering messages
+            auto_scroll()
+
         if prompt := st.chat_input("Ask about your documents"):
             st.session_state.messages.append({"role": "user", "content": prompt})
             
@@ -247,6 +279,9 @@ def main():
                     })
                 except Exception as e:
                     st.error(f"Query failed: {str(e)}")
+
+            # Force UI update
+            st.rerun()
 
 if __name__ == "__main__":
     main()
