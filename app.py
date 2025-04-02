@@ -25,7 +25,7 @@ from streamlit.components.v1 import html
 warnings.filterwarnings("ignore")
 
 # Configuration
-MAX_THREADS = 4
+MAX_THREADS = 10
 MAX_HISTORY = 5
 SUPPORTED_EXTS = [
     ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
@@ -202,7 +202,7 @@ def main():
                         combined = "\n\n".join(processed)
                         st.session_state.query_engine = VectorStoreIndex.from_documents(
                             [Document(text=combined)], embed_model=embed_model
-                        ).as_query_engine(llm=groq_llm)
+                        ).as_chat_engine(llm=groq_llm)              #as_query_engine(llm=groq_llm)
                         
                         st.session_state.file_hash = current_hash
                         status.update(label="Processing complete!", state="complete")
