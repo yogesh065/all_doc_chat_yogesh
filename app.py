@@ -104,14 +104,7 @@ def process_office_file(file_path, file_type):
         for sheet_name, sheet_data in df.items():
             text_content += f"\nSheet: {sheet_name}\n"
             text_content += sheet_data.to_string()
-    elif file_type == "docx":
-        doc = Document(file_path)
-        text_content = "\n".join([para.text for para in doc.paragraphs])
-    elif file_type in (("jpg", "jpeg", "png", "gif")):
-        image = Image.open(file_path)
-        text_content = extract_text_from_image(image)
     st.write(text_content)
-
     return text_content
 
 def process_documents(uploaded_files):
@@ -169,8 +162,8 @@ st.title("🧠 Multimodal Document Analyzer")
 # File Upload Section
 uploaded_files = st.file_uploader(
     "Upload Documents (PDF, DOC, XLSX, PPT)",
-    type=["pdf", "docx", "doc", "xlsx", "pptx", "ppt","png","jpg"],
-    accept_multiple_files=False
+    type=["pdf", "docx", "doc", "xlsx", "pptx", "ppt"],
+    accept_multiple_files=True
 )
 
 # Processing Pipeline
