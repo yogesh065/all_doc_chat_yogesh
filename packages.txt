@@ -1,1 +1,10 @@
 tesseract-ocr
+tesseract-ocr-eng
+libmagic1
+poppler-utils
+antiword
+unrtf
+libreoffice
+ghostscript
+libxml2
+libxslt1-dev
