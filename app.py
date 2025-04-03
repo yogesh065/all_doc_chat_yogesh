@@ -204,13 +204,14 @@ def main():
                         text= processed.split("\n\n")
 
                         documents = [Document(text=text) for text in text]
-                        st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
                         Settings.text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
-                        parser = SentenceSplitter()
-                        nodes = parser.get_nodes_from_documents(documents)
-
+                        documents = [Document(text=text) for text in SentenceSplitter.split_text(text)]
+                        st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
+                        st.session_state.index = None
+                        st.session_state.query_engine = None
                         st.session_state.index = VectorStoreIndex.from_documents(
-                            nodes,
+                            documents,
+                
                            show_progress=True)
                         st.session_state.query_engine = st.session_state.index.as_query_engine(llm=groq_llm)
                         return st.session_state.query_engine
