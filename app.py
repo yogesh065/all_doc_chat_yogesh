@@ -206,11 +206,12 @@ def main():
                         documents = [Document(text=text) for text in text]
                         st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
                         Settings.text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
-                        nodes = SentenceSplitter()
+                        parser = SentenceSplitter()
+                        nodes = parser.get_nodes_from_documents(documents)
+
                         index = VectorStoreIndex.from_documents(
                             nodes,
-                            transformations=[SentenceSplitter(chunk_size=512, chunk_overlap=50)],show_progress=True
-                        )
+                           show_progress=True)
                         return index.as_query_engine(llm=groq_llm)
                      
 
