@@ -200,15 +200,18 @@ def main():
                                 lambda f: process_file(f, temp_dir), uploaded_files
                             ))
 
-                        
-                        #create node and slit chunk overlpa 100
-                        documents = [Document(text=text) for text in processed if text]
-                        if not documents:
-                            st.error("No valid documents found.")
-                            return ""
+                        processed = "\n\n".join(processed)
+                        text= processed.split("\n\n")
+
+                        documents = [Document(text=text) for text in text]
                         st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
                         Settings.text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
-                        nodes = Settings.text_splitter.split_documents(documents)
+                        nodes = SentenceSplitter()
+                        index = VectorStoreIndex.from_documents(
+                            nodes,
+                            transformations=[SentenceSplitter(chunk_size=512, chunk_overlap=50)],show_progress=True
+                        )
+                        return index.as_query_engine(llm=groq_llm)
                      
 
                         st.session_state.query_engine = VectorStoreIndex.from_documents(
