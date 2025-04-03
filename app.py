@@ -200,9 +200,19 @@ def main():
                                 lambda f: process_file(f, temp_dir), uploaded_files
                             ))
 
-                        combined = "\n\n".join(processed)
+                        
+                        #create node and slit chunk overlpa 100
+                        documents = [Document(text=text) for text in processed if text]
+                        if not documents:
+                            st.error("No valid documents found.")
+                            return ""
+                        st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
+                        Settings.text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
+                        nodes = Settings.text_splitter.split_documents(documents)
+                     
+
                         st.session_state.query_engine = VectorStoreIndex.from_documents(
-                            [Document(text=combined)], embed_model=embed_model,show_progress=True
+                           nodes , embed_model=embed_model,show_progress=True
                         ).as_query_engine(llm=groq_llm)
 
                         st.session_state.file_hash = current_hash
