@@ -209,15 +209,13 @@ def main():
                         documents = [Document(text=chunk) for chunk in text_splitter.split_text(processed)]
                         st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
 
-                        st.session_state.index = VectorStoreIndex(documents, show_progress=True)
-                        st.session_state.index = None
+                        index = VectorStoreIndex(documents, show_progress=True).as_query_engine(llm=groq_llm)
                         st.session_state.query_engine = None
                         st.session_state.index = VectorStoreIndex.from_documents(
                             documents,
                 
                            show_progress=True)
                         st.session_state.query_engine = st.session_state.index.as_query_engine(llm=groq_llm)
-                        return st.session_state.query_engine
                      
 
 
