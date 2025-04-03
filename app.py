@@ -200,13 +200,15 @@ def main():
                                 lambda f: process_file(f, temp_dir), uploaded_files
                             ))
 
-                        processed = "\n\n".join(processed)
-                        text= processed.split("\n\n")
+                    
+                        # Configure your text splitter
+                        text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
 
-                        documents = [Document(text=text) for text in text]
-                        Settings.text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
-                        documents = [Document(text=text) for text in SentenceSplitter.split_text(text)]
+                        # Split the text and create documents in one step
+                        documents = [Document(text=chunk) for chunk in text_splitter.split_text(processed)]
                         st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
+
+                        st.session_state.index = VectorStoreIndex(documents, show_progress=True)
                         st.session_state.index = None
                         st.session_state.query_engine = None
                         st.session_state.index = VectorStoreIndex.from_documents(
