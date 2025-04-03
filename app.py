@@ -121,6 +121,7 @@ def process_powerpoint(file_path):
                     text += shape.text_frame.text + "\n"
                 elif shape.shape_type == 13:  # Picture type
                     text += "\n[image]: " + extract_text_from_image(shape.image.blob)
+        st.write("this is ppt content",text)
     except Exception as e:
         st.error(f"PPT error: {str(e)}")
     return text
