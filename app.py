@@ -209,7 +209,7 @@ def main():
 
                         # Split the text and create documents in one step
                         documents = [Document(text=chunk) for chunk in text_splitter.split_text(processed)]
-                        st.info("Documents created successfully! and this is the content:", documents)
+                        st.info(f"Documents created successfully! and this is the content:{documents}")
                         st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
 
                         st.session_state.query_engine = None
