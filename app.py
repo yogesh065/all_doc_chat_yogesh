@@ -209,15 +209,13 @@ def main():
                         parser = SentenceSplitter()
                         nodes = parser.get_nodes_from_documents(documents)
 
-                        index = VectorStoreIndex.from_documents(
+                        st.session_state.index = VectorStoreIndex.from_documents(
                             nodes,
                            show_progress=True)
-                        return index.as_query_engine(llm=groq_llm)
+                        st.session_state.query_engine = st.session_state.index.as_query_engine(llm=groq_llm)
+                        return st.session_state.query_engine
                      
 
-                        st.session_state.query_engine = VectorStoreIndex.from_documents(
-                           nodes , embed_model=embed_model,show_progress=True
-                        ).as_query_engine(llm=groq_llm)
 
                         st.session_state.file_hash = current_hash
                         status.update(label="Processing complete!", state="complete")
