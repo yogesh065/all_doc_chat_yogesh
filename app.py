@@ -204,13 +204,14 @@ def main():
                     
                         # Configure your text splitter
                         processed = "\n\n".join(processed)
+
                         text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
 
                         # Split the text and create documents in one step
                         documents = [Document(text=chunk) for chunk in text_splitter.split_text(processed)]
+                        st.info("Documents created successfully! and this is the content:", documents)
                         st.write(f"Number of documents: {len(documents)} and this is the content: {documents}")
 
-                        index = VectorStoreIndex(documents, show_progress=True).as_query_engine(llm=groq_llm)
                         st.session_state.query_engine = None
                         st.session_state.index = VectorStoreIndex.from_documents(
                             documents,
