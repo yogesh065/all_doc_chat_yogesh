@@ -202,6 +202,7 @@ def main():
 
                     
                         # Configure your text splitter
+                        processed = "\n\n".join(processed)
                         text_splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
 
                         # Split the text and create documents in one step
