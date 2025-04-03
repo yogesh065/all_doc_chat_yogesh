@@ -202,7 +202,7 @@ def main():
 
                         combined = "\n\n".join(processed)
                         st.session_state.query_engine = VectorStoreIndex.from_documents(
-                            [Document(text=combined)], embed_model=embed_model
+                            [Document(text=combined)], embed_model=embed_model,show_progress=True
                         ).as_query_engine(llm=groq_llm)
 
                         st.session_state.file_hash = current_hash
