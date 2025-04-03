@@ -20,14 +20,15 @@ from pptx import Presentation
 from docx import Document as DocxDocument
 from PIL import Image
 from streamlit.components.v1 import html
+import time
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
 
 # Configuration
-MAX_THREADS = 10
-MAX_HISTORY = 5
-SUPPORTED_EXTS = [
+max_threads = 10
+max_history = 5
+supported_exts = [
     ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
     ".odt", ".rtf", ".txt", ".csv", ".json", ".html", ".htm",
     ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"
@@ -36,14 +37,14 @@ SUPPORTED_EXTS = [
 # System setup
 @st.cache_resource
 def configure_system():
-    embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en")
+    embed_model = HuggingFaceEmbedding(model_name="baai/bge-small-en")
     groq_llm = Groq(model="llama-3.3-70b-specdec", api_key=st.secrets["k"]["api_key"])
-    
+
     tesseract_path = shutil.which('tesseract')
     if not tesseract_path:
-        raise EnvironmentError('Tesseract not found in PATH')
+        raise EnvironmentError('Tesseract not found in path')
     pytesseract.pytesseract.tesseract_cmd = tesseract_path
-    
+
     return embed_model, groq_llm
 
 embed_model, groq_llm = configure_system()
@@ -63,7 +64,7 @@ def extract_text_from_image(image_data):
         processed_img = preprocess_image(image_data)
         return pytesseract.image_to_string(processed_img).strip()
     except Exception as e:
-        st.error(f"OCR Error: {str(e)}")
+        st.error(f"OCR error: {str(e)}")
         return ""
 
 def process_pdf(file_path):
@@ -73,7 +74,7 @@ def process_pdf(file_path):
             text += page.get_text()
             for img in page.get_images(full=True):
                 base_image = doc.extract_image(img[0])
-                text += "\n[IMAGE]: " + extract_text_from_image(base_image["image"])
+                text += "\n[image]: " + extract_text_from_image(base_image["image"])
     return text
 
 def process_word(file_path):
@@ -84,7 +85,7 @@ def process_word(file_path):
         for rel in doc.part.rels.values():
             if "image" in rel.target_ref:
                 img_data = rel.target_part.blob
-                text += "\n[IMAGE]: " + extract_text_from_image(img_data)
+                text += "\n[image]: " + extract_text_from_image(img_data)
     except Exception as e:
         st.error(f"Word error: {str(e)}")
     return text
@@ -94,18 +95,18 @@ def process_excel(file_path):
     try:
         sheets = pd.ExcelFile(file_path).sheet_names
         for sheet_name in sheets:
-            chunks = pd.read_excel(file_path, sheet_name=sheet_name, 
-                                 engine='openpyxl', chunksize=1000)
-            sheet_text = f"\nSheet: {sheet_name}\n"
+            chunks = pd.read_excel(file_path, sheet_name=sheet_name, engine='openpyxl', chunksize=1000)
+            sheet_text = f"\nsheet: {sheet_name}\n"
             for chunk in chunks:
                 sheet_text += chunk.to_string(index=False) + "\n"
             text += sheet_text
-        
+
+        # Read images if .xlsx
         if file_path.suffix.lower() == ".xlsx":
             wb = load_workbook(file_path, read_only=True)
             for sheet in wb.worksheets:
                 for image in sheet._images:
-                    text += "\n[IMAGE]: " + extract_text_from_image(image._data())
+                    text += "\n[image]: " + extract_text_from_image(image._data())
     except Exception as e:
         st.error(f"Excel error: {str(e)}")
     return text
@@ -118,8 +119,8 @@ def process_powerpoint(file_path):
             for shape in slide.shapes:
                 if shape.has_text_frame:
                     text += shape.text_frame.text + "\n"
-                elif shape.shape_type == 13:
-                    text += "\n[IMAGE]: " + extract_text_from_image(shape.image.blob)
+                elif shape.shape_type == 13:  # Picture type
+                    text += "\n[image]: " + extract_text_from_image(shape.image.blob)
     except Exception as e:
         st.error(f"PPT error: {str(e)}")
     return text
@@ -166,9 +167,9 @@ def auto_scroll():
         window.parent.document.querySelectorAll(
             '[data-testid="stVerticalBlock"]'
         ).forEach(el => {
-            el.scrollTop = el.scrollHeight
-        })
-    }, 100)
+            el.scrollTop = el.scrollHeight;
+        });
+    }, 100);
     </script>
     """
     html(scroll_js, height=0)
@@ -181,7 +182,7 @@ def main():
     # File upload
     uploaded_files = st.file_uploader(
         "Upload documents",
-        type=SUPPORTED_EXTS,
+        type=supported_exts,
         accept_multiple_files=True,
         on_change=reset_chat
     )
@@ -189,25 +190,25 @@ def main():
     # Process files
     if uploaded_files:
         current_hash = hashlib.md5(b''.join(f.getbuffer() for f in uploaded_files)).hexdigest()
-        
-        if current_hash != st.session_state.file_hash:
+
+        if current_hash != st.session_state.file_hash:  # Check if new files uploaded
             with st.status("Processing files...", expanded=True) as status:
                 try:
                     with tempfile.TemporaryDirectory() as temp_dir:
-                        with ThreadPoolExecutor(MAX_THREADS) as executor:
+                        with ThreadPoolExecutor(max_threads) as executor:
                             processed = list(executor.map(
                                 lambda f: process_file(f, temp_dir), uploaded_files
                             ))
-                        
+
                         combined = "\n\n".join(processed)
                         st.session_state.query_engine = VectorStoreIndex.from_documents(
                             [Document(text=combined)], embed_model=embed_model
                         ).as_query_engine(llm=groq_llm)
-                        
+
                         st.session_state.file_hash = current_hash
                         status.update(label="Processing complete!", state="complete")
                         reset_chat()
-                        
+
                 except Exception as e:
                     st.error(f"Processing failed: {str(e)}")
                     reset_chat()
@@ -215,11 +216,11 @@ def main():
     # Chat interface
     if st.session_state.query_engine:
         st.header("Chat with Documents")
-        
+
         # Chat container
         chat_container = st.container()
         with chat_container:
-            for msg in st.session_state.messages[-MAX_HISTORY:]:
+            for msg in st.session_state.messages[-max_history:]:
                 with st.chat_message(msg["role"]):
                     st.markdown(msg["content"])
             auto_scroll()
@@ -227,7 +228,7 @@ def main():
         # Input handling
         if prompt := st.chat_input("Ask about your documents"):
             st.session_state.messages.append({"role": "user", "content": prompt})
-            
+
             with st.spinner("Analyzing..."):
                 try:
                     response = st.session_state.query_engine.query(prompt)
@@ -237,7 +238,7 @@ def main():
                     })
                 except Exception as e:
                     st.error(f"Query error: {str(e)}")
-            
+
             st.rerun()
 
 if __name__ == "__main__":
